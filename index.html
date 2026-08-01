@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kristall Clicker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .score-container {
+            font-size: 40px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .crystal-btn {
+            font-size: 130px;
+            cursor: pointer;
+            transition: transform 0.05s ease-in-out;
+            filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.5));
+        }
+        .crystal-btn:active {
+            transform: scale(0.85);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="score-container">
+        💎 <span id="score">0</span>
+    </div>
+
+    <div class="crystal-btn" onclick="tapCrystal()">
+        💎
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        if (tg) tg.expand();
+
+        let score = 0;
+
+        function tapCrystal() {
+            score += 1;
+            document.getElementById('score').innerText = score;
+            
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+    </script>
+</body>
+</html>
