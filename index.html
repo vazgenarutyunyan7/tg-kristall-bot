@@ -3,65 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Kristall Clicker</title>
+    <title>Kristall Economy</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background-color: #0f172a;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
+        * {
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
         }
-        .score-container {
-            font-size: 40px;
+
+        body {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* Шапка с профилем */
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .level-tag {
             font-weight: bold;
-            margin-bottom: 30px;
+            color: #38bdf8;
+            font-size: 14px;
+        }
+
+        /* Баланс */
+        .score-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 42px;
+            font-weight: 900;
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+            margin-top: 20px;
         }
+
+        /* Главная кнопка-кристалл */
+        .click-area {
+            perspective: 1000px;
+            margin: auto 0;
+        }
+
         .crystal-btn {
-            font-size: 130px;
+            font-size: 140px;
             cursor: pointer;
-            transition: transform 0.05s ease-in-out;
-            filter: drop-shadow(0 0 25px rgba(59, 130, 246, 0.5));
+            transition: transform 0.1s ease-out;
+            filter: drop-shadow(0 0 35px rgba(56, 189, 248, 0.4));
+            display: inline-block;
         }
-        .crystal-btn:active {
-            transform: scale(0.85);
+
+        /* Шкала энергии */
+        .energy-container {
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 20px;
+        }
+
+        .energy-info {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .energy-bar-bg {
+            width: 100%;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .energy-bar-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            border-radius: 10px;
+            transition: width 0.2s ease;
+        }
+
+        /* Анимация вылетающего +1 */
+        .floating-text {
+            position: absolute;
+            font-size: 32px;
+            font-weight: 900;
+            color: #38bdf8;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.3);
+            }
         }
     </style>
 </head>
 <body>
 
+    <div class="header">
+        <span class="level-tag">💎 Новичок (LVL 1)</span>
+        <span>⚡ Тапалка</span>
+    </div>
+
     <div class="score-container">
         💎 <span id="score">0</span>
     </div>
 
-    <div class="crystal-btn" onclick="tapCrystal()">
-        💎
+    <div class="click-area">
+        <div class="crystal-btn" id="crystal">💎</div>
+    </div>
+
+    <div class="energy-container">
+        <div class="energy-info">
+            <span>⚡ Энергия</span>
+            <span><span id="energy">1000</span> / 1000</span>
+        </div>
+        <div class="energy-bar-bg">
+            <div class="energy-bar-fill" id="energyFill"></div>
+        </div>
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
+        const tg = window.Telegram.WebApp;
         if (tg) tg.expand();
 
         let score = 0;
+        let energy = 1000;
+        const maxEnergy = 1000;
 
-        function tapCrystal() {
+        const scoreEl = document.getElementById('score');
+        const energyEl = document.getElementById('energy');
+        const energyFill = document.getElementById('energyFill');
+        const crystal = document.getElementById('crystal');
+
+        // Обработка клика
+        crystal.addEventListener('pointerdown', (e) => {
+            if (energy <= 0) return;
+
+            // Изменение баланса и энергии
             score += 1;
-            document.getElementById('score').innerText = score;
-            
+            energy -= 1;
+            updateUI();
+
+            // Вибрация Telegram
             if (tg && tg.HapticFeedback) {
                 tg.HapticFeedback.impactOccurred('light');
             }
+
+            // 3D Анимация нажатия
+            const rect = crystal.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            crystal.style.transform = `scale(0.92) rotateX(${-y / 4}deg) rotateY(${x / 4}deg)`;
+
+            // Создание вылетающего +1
+            createFloatingNumber(e.clientX, e.clientY);
+        });
+
+        crystal.addEventListener('pointerup', () => {
+            crystal.style.transform = 'scale(1) rotateX(0deg) rotateY(0deg)';
+        });
+
+        function createFloatingNumber(x, y) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.innerText = '+1';
+            el.style.left = `${x - 15}px`;
+            el.style.top = `${y - 30}px`;
+            document.body.appendChild(el);
+
+            setTimeout(() => el.remove(), 800);
         }
+
+        function updateUI() {
+            scoreEl.innerText = score;
+            energyEl.innerText = energy;
+            energyFill.style.width = `${(energy / maxEnergy) * 100}%`;
+        }
+
+        // Регенерация энергии (1 единица каждые 500мс)
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy += 1;
+                updateUI();
+            }
+        }, 500);
     </script>
 </body>
 </html>
